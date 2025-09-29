@@ -1,0 +1,88 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body { font: 12px/1.4 Inter, sans-serif; margin: 12px; }
+      label { display:block; margin: 8px 0 4px; }
+      input[type="number"] { width: 100%; padding: 6px; box-sizing: border-box; }
+      .row { display:flex; gap:8px; }
+      .row > div { flex:1; }
+      button { margin-top: 12px; padding: 8px 10px; }
+      .actions { display:flex; gap:8px; justify-content:flex-end; }
+    </style>
+  </head>
+  <body>
+    <h3>Offset Border Settings</h3>
+
+    <label>Gap (px)</label>
+    <input id="gap" type="number" min="0" value="12" />
+
+    <div class="row">
+      <div>
+        <label>Stroke width (px)</label>
+        <input id="strokeWidth" type="number" min="0" value="2" />
+      </div>
+      <div>
+        <label>Stroke align</label>
+        <select id="strokeAlign">
+          <option value="OUTSIDE">Outside</option>
+          <option value="CENTER">Center</option>
+          <option value="INSIDE">Inside</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row">
+      <div>
+        <label>Stroke color (RGB 0–1)</label>
+        <input id="strokeColor" placeholder="0,0,0" value="0,0,0" />
+      </div>
+      <div>
+        <label>Gap color (RGB 0–1 or empty = transparent)</label>
+        <input id="gapColor" placeholder="1,1,1" value="1,1,1" />
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="cancel">Cancel</button>
+      <button id="save">Save</button>
+    </div>
+
+    <script>
+      function parseRGB(s) {
+        if (!s) return null;
+        const parts = s.split(",").map(v => parseFloat(v.trim()));
+        if (parts.length !== 3 || parts.some(isNaN)) return null;
+        return { r: parts[0], g: parts[1], b: parts[2] };
+      }
+
+      onmessage = (e) => {
+        const msg = e.data.pluginMessage;
+        if (msg?.type === "load") {
+          const s = msg.settings;
+          gap.value = s.gap;
+          strokeWidth.value = s.strokeWidth;
+          strokeAlign.value = s.strokeAlign;
+          strokeColor.value = `${s.strokeColor.r},${s.strokeColor.g},${s.strokeColor.b}`;
+          gapColor.value = s.gapColor ? `${s.gapColor.r},${s.gapColor.g},${s.gapColor.b}` : "";
+        }
+      };
+
+      document.getElementById("save").onclick = () => {
+        const settings = {
+          gap: Number(gap.value) || 0,
+          strokeWidth: Number(strokeWidth.value) || 0,
+          strokeAlign: strokeAlign.value,
+          strokeColor: parseRGB(strokeColor.value) || { r: 0, g: 0, b: 0 },
+          gapColor: parseRGB(gapColor.value) // null = transparent
+        };
+        parent.postMessage({ pluginMessage: { type: "save", settings } }, "*");
+      };
+
+      document.getElementById("cancel").onclick = () => {
+        parent.postMessage({ pluginMessage: { type: "cancel" } }, "*");
+      };
+    </script>
+  </body>
+</html>
